@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import type { Milestone, ProgressEntry, ThesisPlan } from '../types';
+import type { HistoryEventType, Milestone, ProgressEntry, ThesisPlan } from '../types';
 import { makeId } from '../lib/id';
 import { formatDate, todayIso } from '../lib/date';
 import { milestoneProgress, orderedMilestones } from '../lib/progress';
+import { appendHistory } from '../lib/history';
 import { ProgressBar } from './ProgressBar';
 import { StatusStamp } from './StatusStamp';
 import { CheckIcon, PencilIcon, PlusIcon, TrashIcon } from './Icons';
@@ -12,16 +13,26 @@ interface ProgressTrackerProps {
   onChange: (updater: (plan: ThesisPlan) => ThesisPlan) => void;
 }
 
+interface HistoryInput {
+  type: HistoryEventType;
+  summary: string;
+}
+
+function truncate(text: string, max = 60): string {
+  const clean = text.replace(/\s+/g, ' ').trim();
+  return clean.length > max ? `${clean.slice(0, max)}…` : clean;
+}
+
 export function ProgressTracker({ plan, onChange }: ProgressTrackerProps) {
   const milestones = orderedMilestones(plan);
   const [activeId, setActiveId] = useState<string | null>(milestones[0]?.id ?? null);
   const active = milestones.find((m) => m.id === activeId) ?? milestones[0] ?? null;
 
-  function updateMilestone(id: string, patch: Partial<Milestone>) {
-    onChange((p) => ({
-      ...p,
-      milestones: p.milestones.map((m) => (m.id === id ? { ...m, ...patch } : m)),
-    }));
+  function updateMilestone(id: string, patch: Partial<Milestone>, event?: HistoryInput) {
+    onChange((p) => {
+      const next = { ...p, milestones: p.milestones.map((m) => (m.id === id ? { ...m, ...patch } : m)) };
+      return event ? appendHistory(next, event.type, event.summary) : next;
+    });
   }
 
   if (milestones.length === 0) {
@@ -50,7 +61,7 @@ export function ProgressTracker({ plan, onChange }: ProgressTrackerProps) {
       {active && (
         <MilestoneProgress
           milestone={active}
-          onUpdate={(patch) => updateMilestone(active.id, patch)}
+          onUpdate={(patch, event) => updateMilestone(active.id, patch, event)}
         />
       )}
     </div>
@@ -62,7 +73,7 @@ function MilestoneProgress({
   onUpdate,
 }: {
   milestone: Milestone;
-  onUpdate: (patch: Partial<Milestone>) => void;
+  onUpdate: (patch: Partial<Milestone>, event?: HistoryInput) => void;
 }) {
   const [noteDate, setNoteDate] = useState(todayIso());
   const [noteText, setNoteText] = useState('');
@@ -71,24 +82,41 @@ function MilestoneProgress({
   const [editText, setEditText] = useState('');
   const pct = milestoneProgress(milestone);
   const isDone = Boolean(milestone.completedAt);
+  const title = milestone.title || 'Untitled milestone';
 
   function toggleTask(id: string) {
-    onUpdate({
-      tasks: milestone.tasks.map((t) =>
-        t.id === id ? { ...t, status: t.status === 'done' ? 'todo' : 'done' } : t,
-      ),
-    });
+    const task = milestone.tasks.find((t) => t.id === id);
+    if (!task) return;
+    const done = task.status !== 'done';
+    onUpdate(
+      {
+        tasks: milestone.tasks.map((t) => (t.id === id ? { ...t, status: done ? 'done' : 'todo' } : t)),
+      },
+      {
+        type: done ? 'task-completed' : 'task-reopened',
+        summary: `${done ? 'Completed' : 'Reopened'} task "${task.title || 'Untitled task'}" in milestone "${title}"`,
+      },
+    );
   }
 
   function toggleComplete() {
-    onUpdate({ completedAt: isDone ? null : todayIso() });
+    onUpdate(
+      { completedAt: isDone ? null : todayIso() },
+      {
+        type: isDone ? 'milestone-reopened' : 'milestone-completed',
+        summary: `${isDone ? 'Reopened' : 'Completed'} milestone "${title}"`,
+      },
+    );
   }
 
   function addLogEntry() {
     const note = noteText.trim();
     if (!note) return;
     const entry: ProgressEntry = { id: makeId(), date: noteDate, note };
-    onUpdate({ log: [entry, ...milestone.log] });
+    onUpdate(
+      { log: [entry, ...milestone.log] },
+      { type: 'progress-logged', summary: `Logged progress on milestone "${title}": "${truncate(note)}"` },
+    );
     setNoteText('');
   }
 
@@ -105,15 +133,19 @@ function MilestoneProgress({
   function saveEdit() {
     const note = editText.trim();
     if (!note || !editingId) return;
-    onUpdate({
-      log: milestone.log.map((e) => (e.id === editingId ? { ...e, date: editDate, note } : e)),
-    });
+    onUpdate(
+      { log: milestone.log.map((e) => (e.id === editingId ? { ...e, date: editDate, note } : e)) },
+      { type: 'progress-edited', summary: `Edited a progress log entry on milestone "${title}"` },
+    );
     setEditingId(null);
   }
 
-  function deleteLogEntry(id: string) {
-    onUpdate({ log: milestone.log.filter((e) => e.id !== id) });
-    if (editingId === id) setEditingId(null);
+  function deleteLogEntry(entry: ProgressEntry) {
+    onUpdate(
+      { log: milestone.log.filter((e) => e.id !== entry.id) },
+      { type: 'progress-deleted', summary: `Deleted a progress log entry ("${truncate(entry.note)}") from milestone "${title}"` },
+    );
+    if (editingId === entry.id) setEditingId(null);
   }
 
   const sortedLog = [...milestone.log].sort((a, b) => b.date.localeCompare(a.date));
@@ -122,7 +154,7 @@ function MilestoneProgress({
     <section className="card progress-milestone">
       <div className="progress-milestone-head">
         <div>
-          <div className="progress-milestone-title">{milestone.title || 'Untitled milestone'}</div>
+          <div className="progress-milestone-title">{title}</div>
           <div className="progress-milestone-dates">
             {formatDate(milestone.plannedStart, { withYear: false })} – {formatDate(milestone.plannedEnd, { withYear: false })}
           </div>
@@ -214,7 +246,7 @@ function MilestoneProgress({
                   <button className="btn btn-ghost btn-sm" onClick={() => startEdit(entry)} aria-label="Edit entry">
                     <PencilIcon className="icon" />
                   </button>
-                  <button className="btn btn-ghost btn-sm" onClick={() => deleteLogEntry(entry.id)} aria-label="Delete entry">
+                  <button className="btn btn-ghost btn-sm" onClick={() => deleteLogEntry(entry)} aria-label="Delete entry">
                     <TrashIcon className="icon" />
                   </button>
                 </div>

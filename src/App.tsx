@@ -16,6 +16,7 @@ import { Overview } from './components/Overview';
 import { PlanEditor } from './components/PlanEditor';
 import { ProgressTracker } from './components/ProgressTracker';
 import { GanttChart } from './components/GanttChart';
+import { HistoryView } from './components/HistoryView';
 import { ConfirmDialog } from './components/ConfirmDialog';
 import './App.css';
 
@@ -146,6 +147,7 @@ function App() {
             {view === 'plan' && <PlanEditor plan={plan} onChange={updatePlan} />}
             {view === 'progress' && <ProgressTracker plan={plan} onChange={updatePlan} />}
             {view === 'gantt' && <GanttChart plan={plan} />}
+            {view === 'history' && <HistoryView plan={plan} />}
           </>
         )}
       </main>

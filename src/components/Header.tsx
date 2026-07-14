@@ -17,6 +17,7 @@ const TABS: Array<{ id: ViewId; label: string }> = [
   { id: 'plan', label: 'Plan' },
   { id: 'progress', label: 'Progress' },
   { id: 'gantt', label: 'Gantt' },
+  { id: 'history', label: 'History' },
 ];
 
 export function Header({ hasPlan, activeView, onChangeView, onNew, onClose, onSave, onLoadFile }: HeaderProps) {

@@ -8,7 +8,7 @@ export interface ThesisTask {
 
 export interface ProgressEntry {
   id: string;
-  date: string; // ISO date (yyyy-mm-dd)
+  date: string; // ISO date (yyyy-mm-dd), the date the work happened — user-editable
   note: string;
 }
 
@@ -32,12 +32,36 @@ export interface ThesisMeta {
   targetDate: string; // ISO date
 }
 
+export type HistoryEventType =
+  | 'milestone-added'
+  | 'milestone-edited'
+  | 'milestone-deleted'
+  | 'milestone-completed'
+  | 'milestone-reopened'
+  | 'task-added'
+  | 'task-edited'
+  | 'task-deleted'
+  | 'task-completed'
+  | 'task-reopened'
+  | 'progress-logged'
+  | 'progress-edited'
+  | 'progress-deleted'
+  | 'plan-details-edited';
+
+export interface HistoryEvent {
+  id: string;
+  type: HistoryEventType;
+  at: string; // ISO datetime
+  summary: string;
+}
+
 export interface ThesisPlan {
-  formatVersion: 1;
+  formatVersion: 2;
   meta: ThesisMeta;
   milestones: Milestone[];
+  history: HistoryEvent[];
   createdAt: string; // ISO datetime
   updatedAt: string; // ISO datetime
 }
 
-export type ViewId = 'overview' | 'plan' | 'progress' | 'gantt';
+export type ViewId = 'overview' | 'plan' | 'progress' | 'gantt' | 'history';

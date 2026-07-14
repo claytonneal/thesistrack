@@ -2,6 +2,16 @@ export function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+export function nowIso(): string {
+  return new Date().toISOString();
+}
+
+export function formatTime(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
 export function parseIsoDate(iso: string): Date {
   const [y, m, d] = iso.split('-').map(Number);
   return new Date(y, (m ?? 1) - 1, d ?? 1);

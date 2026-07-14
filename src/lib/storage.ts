@@ -1,13 +1,13 @@
-import type { Milestone, ThesisPlan } from '../types';
+import type { HistoryEvent, Milestone, ThesisPlan } from '../types';
 import { makeId } from './id';
-import { todayIso } from './date';
+import { nowIso, todayIso } from './date';
 
 const LOCAL_STORAGE_KEY = 'thesistrack.plan.v1';
 
 export function createEmptyPlan(): ThesisPlan {
-  const now = new Date().toISOString();
+  const now = nowIso();
   return {
-    formatVersion: 1,
+    formatVersion: 2,
     meta: {
       title: '',
       studentName: '',
@@ -17,13 +17,46 @@ export function createEmptyPlan(): ThesisPlan {
       targetDate: '',
     },
     milestones: [],
+    history: [],
     createdAt: now,
     updatedAt: now,
   };
 }
 
+function sampleHistory(milestones: Milestone[]): HistoryEvent[] {
+  const events: HistoryEvent[] = [];
+  for (const m of milestones) {
+    const addedAt = new Date(`${m.plannedStart}T09:00:00.000Z`);
+    events.push({
+      id: makeId(),
+      type: 'milestone-added',
+      at: addedAt.toISOString(),
+      summary: `Added milestone "${m.title}"`,
+    });
+    for (const t of m.tasks) {
+      events.push({
+        id: makeId(),
+        type: 'task-added',
+        at: addedAt.toISOString(),
+        summary: `Added task "${t.title}" to milestone "${m.title}"`,
+      });
+      if (t.status === 'done') {
+        const completedAt = new Date(addedAt);
+        completedAt.setDate(completedAt.getDate() + 3);
+        events.push({
+          id: makeId(),
+          type: 'task-completed',
+          at: completedAt.toISOString(),
+          summary: `Completed task "${t.title}" in milestone "${m.title}"`,
+        });
+      }
+    }
+  }
+  return events;
+}
+
 export function createSamplePlan(): ThesisPlan {
-  const now = new Date().toISOString();
+  const now = nowIso();
   const today = new Date();
   const iso = (offsetWeeks: number) => {
     const d = new Date(today);
@@ -48,8 +81,71 @@ export function createSamplePlan(): ThesisPlan {
     log: [],
   });
 
+  const milestones = [
+    milestone(
+      'Literature Review',
+      'Survey prior work on fairness metrics and hiring algorithms.',
+      -2,
+      4,
+      [
+        ['Collect 40+ core papers', 'done'],
+        ['Draft synthesis matrix', 'done'],
+        ['Write review chapter', 'in-progress'],
+      ],
+    ),
+    milestone(
+      'Research Proposal & Methodology',
+      'Define research questions, hypotheses, and evaluation methodology.',
+      4,
+      8,
+      [
+        ['Finalize research questions', 'done'],
+        ['Design evaluation methodology', 'in-progress'],
+        ['Committee proposal defense', 'todo'],
+      ],
+    ),
+    milestone(
+      'Data Collection',
+      'Assemble and anonymize hiring dataset with advisor approval.',
+      8,
+      14,
+      [
+        ['IRB approval', 'todo'],
+        ['Source dataset partners', 'todo'],
+        ['Build preprocessing pipeline', 'todo'],
+      ],
+    ),
+    milestone(
+      'Analysis & Experiments',
+      'Run fairness audits across candidate models.',
+      14,
+      22,
+      [
+        ['Implement baseline models', 'todo'],
+        ['Run fairness metrics suite', 'todo'],
+        ['Statistical significance testing', 'todo'],
+      ],
+    ),
+    milestone(
+      'Draft Writing',
+      'Write full thesis draft chapters 1 through 6.',
+      22,
+      28,
+      [
+        ['Chapters 1-3 draft', 'todo'],
+        ['Chapters 4-6 draft', 'todo'],
+        ['Advisor review pass', 'todo'],
+      ],
+    ),
+    milestone('Defense & Submission', 'Final revisions, defense, and submission.', 28, 30, [
+      ['Schedule defense', 'todo'],
+      ['Final revisions', 'todo'],
+      ['Submit to registrar', 'todo'],
+    ]),
+  ];
+
   return {
-    formatVersion: 1,
+    formatVersion: 2,
     meta: {
       title: 'Algorithmic Bias in Automated Hiring Systems',
       studentName: 'Jordan Avery',
@@ -58,68 +154,8 @@ export function createSamplePlan(): ThesisPlan {
       startDate: iso(-2),
       targetDate: iso(30),
     },
-    milestones: [
-      milestone(
-        'Literature Review',
-        'Survey prior work on fairness metrics and hiring algorithms.',
-        -2,
-        4,
-        [
-          ['Collect 40+ core papers', 'done'],
-          ['Draft synthesis matrix', 'done'],
-          ['Write review chapter', 'in-progress'],
-        ],
-      ),
-      milestone(
-        'Research Proposal & Methodology',
-        'Define research questions, hypotheses, and evaluation methodology.',
-        4,
-        8,
-        [
-          ['Finalize research questions', 'done'],
-          ['Design evaluation methodology', 'in-progress'],
-          ['Committee proposal defense', 'todo'],
-        ],
-      ),
-      milestone(
-        'Data Collection',
-        'Assemble and anonymize hiring dataset with advisor approval.',
-        8,
-        14,
-        [
-          ['IRB approval', 'todo'],
-          ['Source dataset partners', 'todo'],
-          ['Build preprocessing pipeline', 'todo'],
-        ],
-      ),
-      milestone(
-        'Analysis & Experiments',
-        'Run fairness audits across candidate models.',
-        14,
-        22,
-        [
-          ['Implement baseline models', 'todo'],
-          ['Run fairness metrics suite', 'todo'],
-          ['Statistical significance testing', 'todo'],
-        ],
-      ),
-      milestone(
-        'Draft Writing',
-        'Write full thesis draft chapters 1 through 6.',
-        22,
-        28,
-        [
-          ['Chapters 1-3 draft', 'todo'],
-          ['Chapters 4-6 draft', 'todo'],
-          ['Advisor review pass', 'todo'],
-        ],
-      ),
-      milestone('Defense & Submission', 'Final revisions, defense, and submission.', 28, 30, [
-        ['Schedule defense', 'todo'],
-        ['Final revisions', 'todo'],
-        ['Submit to registrar', 'todo'],
-      ]),
-    ],
+    milestones,
+    history: sampleHistory(milestones),
     createdAt: now,
     updatedAt: now,
   };
@@ -175,6 +211,23 @@ export function downloadPlan(plan: ThesisPlan): void {
 
 export class PlanFileError extends Error {}
 
+const HISTORY_EVENT_TYPES = new Set([
+  'milestone-added',
+  'milestone-edited',
+  'milestone-deleted',
+  'milestone-completed',
+  'milestone-reopened',
+  'task-added',
+  'task-edited',
+  'task-deleted',
+  'task-completed',
+  'task-reopened',
+  'progress-logged',
+  'progress-edited',
+  'progress-deleted',
+  'plan-details-edited',
+]);
+
 export function validatePlan(data: unknown): ThesisPlan {
   if (!data || typeof data !== 'object') {
     throw new PlanFileError('File does not contain a valid ThesisTrack plan.');
@@ -218,8 +271,19 @@ export function validatePlan(data: unknown): ThesisPlan {
     };
   });
 
+  const historyRaw = Array.isArray(obj.history) ? obj.history : [];
+  const history: HistoryEvent[] = historyRaw.map((raw): HistoryEvent => {
+    const h = raw as Record<string, unknown>;
+    return {
+      id: typeof h.id === 'string' ? h.id : makeId(),
+      type: typeof h.type === 'string' && HISTORY_EVENT_TYPES.has(h.type) ? (h.type as HistoryEvent['type']) : 'plan-details-edited',
+      at: typeof h.at === 'string' ? h.at : nowIso(),
+      summary: typeof h.summary === 'string' ? h.summary : 'Unknown change',
+    };
+  });
+
   return {
-    formatVersion: 1,
+    formatVersion: 2,
     meta: {
       title: typeof meta.title === 'string' ? meta.title : '',
       studentName: typeof meta.studentName === 'string' ? meta.studentName : '',
@@ -229,8 +293,9 @@ export function validatePlan(data: unknown): ThesisPlan {
       targetDate: typeof meta.targetDate === 'string' ? meta.targetDate : '',
     },
     milestones,
-    createdAt: typeof obj.createdAt === 'string' ? obj.createdAt : new Date().toISOString(),
-    updatedAt: typeof obj.updatedAt === 'string' ? obj.updatedAt : new Date().toISOString(),
+    history,
+    createdAt: typeof obj.createdAt === 'string' ? obj.createdAt : nowIso(),
+    updatedAt: typeof obj.updatedAt === 'string' ? obj.updatedAt : nowIso(),
   };
 }
 
