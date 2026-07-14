@@ -5,7 +5,7 @@ import { formatDate, todayIso } from '../lib/date';
 import { milestoneProgress, orderedMilestones } from '../lib/progress';
 import { ProgressBar } from './ProgressBar';
 import { StatusStamp } from './StatusStamp';
-import { PlusIcon } from './Icons';
+import { CheckIcon, PencilIcon, PlusIcon, TrashIcon } from './Icons';
 
 interface ProgressTrackerProps {
   plan: ThesisPlan;
@@ -66,6 +66,9 @@ function MilestoneProgress({
 }) {
   const [noteDate, setNoteDate] = useState(todayIso());
   const [noteText, setNoteText] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDate, setEditDate] = useState('');
+  const [editText, setEditText] = useState('');
   const pct = milestoneProgress(milestone);
   const isDone = Boolean(milestone.completedAt);
 
@@ -87,6 +90,30 @@ function MilestoneProgress({
     const entry: ProgressEntry = { id: makeId(), date: noteDate, note };
     onUpdate({ log: [entry, ...milestone.log] });
     setNoteText('');
+  }
+
+  function startEdit(entry: ProgressEntry) {
+    setEditingId(entry.id);
+    setEditDate(entry.date);
+    setEditText(entry.note);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+  }
+
+  function saveEdit() {
+    const note = editText.trim();
+    if (!note || !editingId) return;
+    onUpdate({
+      log: milestone.log.map((e) => (e.id === editingId ? { ...e, date: editDate, note } : e)),
+    });
+    setEditingId(null);
+  }
+
+  function deleteLogEntry(id: string) {
+    onUpdate({ log: milestone.log.filter((e) => e.id !== id) });
+    if (editingId === id) setEditingId(null);
   }
 
   const sortedLog = [...milestone.log].sort((a, b) => b.date.localeCompare(a.date));
@@ -144,15 +171,59 @@ function MilestoneProgress({
         <label className="label">Progress log</label>
         <div className="log-list" style={{ marginTop: '0.6rem' }}>
           {sortedLog.length === 0 && <p className="log-empty">No entries yet. Note what you worked on below.</p>}
-          {sortedLog.map((entry) => (
-            <div className="log-entry" key={entry.id}>
-              <span className="log-entry-date mono">{formatDate(entry.date, { withYear: false })}</span>
-              <span className="log-entry-note">{entry.note}</span>
-            </div>
-          ))}
+          {sortedLog.map((entry) =>
+            editingId === entry.id ? (
+              <div className="log-entry" key={entry.id}>
+                <div className="log-entry-edit">
+                  <input
+                    className="input date-input"
+                    type="date"
+                    value={editDate}
+                    onChange={(e) => setEditDate(e.target.value)}
+                  />
+                  <textarea
+                    className="textarea"
+                    rows={3}
+                    value={editText}
+                    onChange={(e) => setEditText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                        e.preventDefault();
+                        saveEdit();
+                      }
+                      if (e.key === 'Escape') cancelEdit();
+                    }}
+                    autoFocus
+                  />
+                  <div className="log-entry-edit-actions">
+                    <button className="btn btn-primary btn-sm" onClick={saveEdit}>
+                      <CheckIcon className="icon" />
+                      Log
+                    </button>
+                    <button className="btn btn-ghost btn-sm" onClick={cancelEdit}>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="log-entry" key={entry.id}>
+                <span className="log-entry-date mono">{formatDate(entry.date, { withYear: false })}</span>
+                <span className="log-entry-note">{entry.note}</span>
+                <div className="log-entry-actions">
+                  <button className="btn btn-ghost btn-sm" onClick={() => startEdit(entry)} aria-label="Edit entry">
+                    <PencilIcon className="icon" />
+                  </button>
+                  <button className="btn btn-ghost btn-sm" onClick={() => deleteLogEntry(entry.id)} aria-label="Delete entry">
+                    <TrashIcon className="icon" />
+                  </button>
+                </div>
+              </div>
+            ),
+          )}
         </div>
         <div className="log-add" style={{ marginTop: '1rem' }}>
-          <div className="field">
+          <div className="field log-add-date">
             <label className="label">Date</label>
             <input
               className="input date-input"
@@ -163,20 +234,21 @@ function MilestoneProgress({
           </div>
           <div className="field">
             <label className="label">What did you work on?</label>
-            <input
-              className="input"
+            <textarea
+              className="textarea"
+              rows={3}
               placeholder="e.g. Finished draft of section 2.1"
               value={noteText}
               onChange={(e) => setNoteText(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
+                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                   e.preventDefault();
                   addLogEntry();
                 }
               }}
             />
           </div>
-          <button className="btn btn-outline btn-sm" onClick={addLogEntry}>
+          <button className="btn btn-outline btn-sm log-add-submit" onClick={addLogEntry}>
             <PlusIcon className="icon" />
             Log
           </button>
