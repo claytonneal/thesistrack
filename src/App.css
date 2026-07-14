@@ -6,6 +6,103 @@
   flex-direction: column;
 }
 
+/* ---------- bottom sheet dialog ---------- */
+
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(34, 29, 21, 0.42);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 100;
+  animation: sheet-backdrop-in 0.18s ease;
+}
+
+@keyframes sheet-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.sheet {
+  width: 100%;
+  max-width: 460px;
+  background: var(--paper-raised);
+  border: 1px solid var(--rule-strong);
+  border-bottom: none;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  box-shadow: var(--shadow-lg);
+  padding: 0.9rem 1.6rem 1.6rem;
+  margin: 0 1.5rem;
+  animation: sheet-in 0.22s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+@media (min-width: 640px) {
+  .sheet {
+    margin-bottom: 3rem;
+    border-bottom: 1px solid var(--rule-strong);
+    border-radius: var(--radius-lg);
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.sheet-grip {
+  width: 36px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--rule-strong);
+  margin: 0 auto 1.1rem;
+}
+
+@media (min-width: 640px) {
+  .sheet-grip {
+    display: none;
+  }
+}
+
+.sheet-title {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.sheet-message {
+  color: var(--ink-soft);
+  line-height: 1.55;
+  white-space: pre-line;
+  margin: 0 0 1.4rem;
+}
+
+.sheet-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+@media (max-width: 480px) {
+  .sheet-actions {
+    flex-direction: column-reverse;
+  }
+  .sheet-actions .btn {
+    width: 100%;
+  }
+}
+
 .app-header {
   position: sticky;
   top: 0;

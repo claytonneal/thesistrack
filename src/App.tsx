@@ -16,12 +16,18 @@ import { Overview } from './components/Overview';
 import { PlanEditor } from './components/PlanEditor';
 import { ProgressTracker } from './components/ProgressTracker';
 import { GanttChart } from './components/GanttChart';
+import { ConfirmDialog } from './components/ConfirmDialog';
 import './App.css';
+
+type DialogState =
+  | { kind: 'confirm'; title: string; message: string; confirmLabel: string; onConfirm: () => void }
+  | { kind: 'alert'; title: string; message: string };
 
 function App() {
   const [plan, setPlan] = useState<ThesisPlan | null>(() => loadFromLocalStorage());
   const [view, setView] = useState<ViewId>('overview');
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [dialog, setDialog] = useState<DialogState | null>(null);
   const lastSavedSnapshot = useRef<string | null>(plan ? JSON.stringify(plan) : null);
 
   useEffect(() => {
@@ -49,33 +55,47 @@ function App() {
   }
 
   function handleNew() {
-    if (plan) {
-      const dirty = JSON.stringify(plan) !== lastSavedSnapshot.current;
-      const proceed = dirty
-        ? window.confirm('Starting a new plan will replace your current one. Save it to a file first?\n\nPress Cancel to go back and save, or OK to discard and start fresh.')
-        : true;
-      if (!proceed) return;
+    function proceed() {
+      const fresh = createEmptyPlan();
+      setPlan(fresh);
+      lastSavedSnapshot.current = null;
+      setLoadError(null);
+      setView('plan');
     }
-    const fresh = createEmptyPlan();
-    setPlan(fresh);
-    lastSavedSnapshot.current = null;
-    setLoadError(null);
-    setView('plan');
+    const dirty = Boolean(plan) && JSON.stringify(plan) !== lastSavedSnapshot.current;
+    if (dirty) {
+      setDialog({
+        kind: 'confirm',
+        title: 'Start a new plan?',
+        message: 'You have unsaved changes. Starting a new plan will replace your current one — save it to a file first if you want to keep it.',
+        confirmLabel: 'Discard & start new',
+        onConfirm: proceed,
+      });
+      return;
+    }
+    proceed();
   }
 
   function handleClose() {
-    if (plan) {
-      const dirty = JSON.stringify(plan) !== lastSavedSnapshot.current;
-      const proceed = dirty
-        ? window.confirm('Close this plan? Save it to a file first if you want a portable copy.\n\nPress Cancel to go back and save, or OK to close.')
-        : true;
-      if (!proceed) return;
+    function proceed() {
+      setPlan(null);
+      lastSavedSnapshot.current = null;
+      setLoadError(null);
+      setView('overview');
+      clearLocalStorage();
     }
-    setPlan(null);
-    lastSavedSnapshot.current = null;
-    setLoadError(null);
-    setView('overview');
-    clearLocalStorage();
+    const dirty = Boolean(plan) && JSON.stringify(plan) !== lastSavedSnapshot.current;
+    if (dirty) {
+      setDialog({
+        kind: 'confirm',
+        title: 'Close this plan?',
+        message: 'You have unsaved changes. Save it to a file first if you want a portable copy.',
+        confirmLabel: 'Close without saving',
+        onConfirm: proceed,
+      });
+      return;
+    }
+    proceed();
   }
 
   function handleSample() {
@@ -102,7 +122,7 @@ function App() {
     } catch (err) {
       const message = err instanceof PlanFileError ? err.message : 'Could not load that file.';
       setLoadError(message);
-      if (plan) window.alert(message);
+      if (plan) setDialog({ kind: 'alert', title: "Couldn't load file", message });
     }
   }
 
@@ -129,6 +149,29 @@ function App() {
           </>
         )}
       </main>
+      {dialog?.kind === 'confirm' && (
+        <ConfirmDialog
+          title={dialog.title}
+          message={dialog.message}
+          confirmLabel={dialog.confirmLabel}
+          tone="danger"
+          onConfirm={() => {
+            dialog.onConfirm();
+            setDialog(null);
+          }}
+          onCancel={() => setDialog(null)}
+        />
+      )}
+      {dialog?.kind === 'alert' && (
+        <ConfirmDialog
+          title={dialog.title}
+          message={dialog.message}
+          confirmLabel="OK"
+          cancelLabel={null}
+          onConfirm={() => setDialog(null)}
+          onCancel={() => setDialog(null)}
+        />
+      )}
     </div>
   );
 }
