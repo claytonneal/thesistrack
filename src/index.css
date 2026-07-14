@@ -1,0 +1,440 @@
+/* ThesisTrack — design system
+   A researcher's ledger: parchment surfaces, ink prose, rust-stamped status marks.
+   Display type is Fraunces (headings, emphasis); IBM Plex Mono carries UI chrome,
+   labels, dates and figures — the "typewritten marginalia" layer. */
+
+:root {
+  --paper: #efe6d2;
+  --paper-raised: #faf4e6;
+  --paper-deep: #e4d8ba;
+  --paper-deep-2: #d9caa2;
+
+  --ink: #221d15;
+  --ink-soft: #5c5343;
+  --ink-faint: #8c8170;
+
+  --rule: #d1c19b;
+  --rule-strong: #b8a679;
+
+  --rust: #b1441f;
+  --rust-dark: #8a3116;
+  --rust-soft: rgba(177, 68, 31, 0.12);
+  --rust-soft-strong: rgba(177, 68, 31, 0.22);
+
+  --forest: #3f6b48;
+  --forest-dark: #2c4d33;
+  --forest-soft: rgba(63, 107, 72, 0.14);
+
+  --amber: #9c7220;
+  --amber-soft: rgba(156, 114, 32, 0.16);
+
+  --slate: #675f52;
+  --slate-soft: rgba(103, 95, 82, 0.12);
+
+  --shadow-sm: 0 1px 2px rgba(34, 29, 21, 0.08);
+  --shadow-md: 0 6px 18px -6px rgba(34, 29, 21, 0.22), 0 2px 6px rgba(34, 29, 21, 0.08);
+  --shadow-lg: 0 20px 45px -18px rgba(34, 29, 21, 0.35), 0 6px 16px -6px rgba(34, 29, 21, 0.15);
+
+  --font-display: 'Fraunces', 'Iowan Old Style', serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+
+  color-scheme: light;
+  color: var(--ink);
+  background: var(--paper);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--paper);
+  position: relative;
+}
+
+/* subtle paper grain, applied once over the whole viewport */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.5;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.13  0 0 0 0 0.11  0 0 0 0 0.08  0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  color: var(--ink);
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+p {
+  margin: 0;
+}
+
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  color: var(--rust);
+}
+
+::selection {
+  background: var(--rust-soft-strong);
+}
+
+/* ---------- typographic utilities ---------- */
+
+.label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* ---------- buttons ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.68em 1.1em;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid transparent;
+  background: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+  white-space: nowrap;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn-primary {
+  background: var(--ink);
+  color: var(--paper-raised);
+  border-color: var(--ink);
+}
+
+.btn-primary:hover {
+  background: var(--rust);
+  border-color: var(--rust);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--rule-strong);
+}
+
+.btn-outline:hover {
+  background: var(--paper-deep);
+  border-color: var(--ink-soft);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--ink-soft);
+  border-color: transparent;
+}
+
+.btn-ghost:hover {
+  color: var(--ink);
+  background: var(--paper-deep);
+}
+
+.btn-danger {
+  background: transparent;
+  color: var(--rust-dark);
+  border-color: transparent;
+}
+
+.btn-danger:hover {
+  background: var(--rust-soft);
+  border-color: var(--rust-soft-strong);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.btn-sm {
+  padding: 0.4em 0.75em;
+  font-size: 11px;
+}
+
+.icon {
+  width: 1em;
+  height: 1em;
+  flex: none;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------- form controls ---------- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4em;
+}
+
+.field > .label {
+  display: block;
+}
+
+.input,
+.select {
+  font-family: var(--font-display);
+  font-size: 16px;
+  color: var(--ink);
+  background: transparent;
+  border: none;
+  border-bottom: 1.5px solid var(--rule-strong);
+  padding: 0.35em 0.1em;
+  border-radius: 0;
+  outline: none;
+  transition: border-color 0.15s ease;
+  width: 100%;
+}
+
+.input::placeholder {
+  color: var(--ink-faint);
+  font-style: italic;
+}
+
+.input:focus,
+.select:focus {
+  border-color: var(--rust);
+}
+
+.textarea {
+  font-family: var(--font-display);
+  font-size: 15.5px;
+  color: var(--ink);
+  background: var(--paper-deep);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 1.55em,
+    var(--rule) 1.55em,
+    var(--rule) calc(1.55em + 1px)
+  );
+  line-height: 1.55em;
+  padding: 0.4em 0.75em 0.6em;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  outline: none;
+  resize: vertical;
+  width: 100%;
+  transition: border-color 0.15s ease;
+}
+
+.textarea:focus {
+  border-color: var(--ink-soft);
+}
+
+.date-input {
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+}
+
+.checkbox {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid var(--rule-strong);
+  border-radius: 3px;
+  background: var(--paper-raised);
+  flex: none;
+  display: grid;
+  place-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.checkbox::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  transform: scale(0);
+  transition: transform 0.12s ease;
+  clip-path: polygon(14% 44%, 0 65%, 38% 100%, 100% 20%, 82% 4%, 36% 72%);
+  background: var(--paper-raised);
+}
+
+.checkbox:checked {
+  background: var(--forest);
+  border-color: var(--forest);
+}
+
+.checkbox:checked::before {
+  transform: scale(1);
+}
+
+/* ---------- surfaces ---------- */
+
+.card {
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ---------- status badges (ink stamps) ---------- */
+
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.35em 0.65em;
+  border-radius: 999px;
+  border: 1.5px solid transparent;
+  line-height: 1;
+}
+
+.stamp::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.stamp-todo {
+  color: var(--slate);
+  border-color: var(--rule-strong);
+  background: transparent;
+}
+
+.stamp-in-progress {
+  color: var(--amber);
+  background: var(--amber-soft);
+}
+
+.stamp-done {
+  color: var(--forest-dark);
+  background: var(--forest-soft);
+  transform: rotate(-2deg);
+}
+
+.stamp-overdue {
+  color: #fff;
+  background: var(--rust);
+}
+
+/* ---------- progress bar ---------- */
+
+.progress-bar {
+  position: relative;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--paper-deep-2);
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  position: absolute;
+  inset: 0;
+  width: 0%;
+  background: var(--rust);
+  border-radius: 999px;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.progress-bar-fill.is-complete {
+  background: var(--forest);
+}
+
+/* ---------- scrollbar (webkit) ---------- */
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--rule-strong);
+  border-radius: 999px;
+  border: 2px solid var(--paper);
+}
+
+@media (max-width: 640px) {
+  body {
+    font-size: 15px;
+  }
+}
